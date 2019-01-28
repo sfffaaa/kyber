@@ -14,6 +14,10 @@ int test_keys()
   unsigned char sk_a[KYBER_SECRETKEYBYTES];
   int i;
 
+  printf("show my the KYBER_CIPHERTEXTBYTES %d\n", KYBER_CIPHERTEXTBYTES);
+  printf("show my the KYBER_SYMBYTES %d\n", KYBER_SYMBYTES);
+  printf("show my the KYBER_PUBLICKEYBYTES %d\n", KYBER_PUBLICKEYBYTES);
+  printf("show my the KYBER_SECRETKEYBYTES %d\n", KYBER_SECRETKEYBYTES);
   for(i=0; i<NTESTS; i++)
   {
     //Alice generates a public key
@@ -21,7 +25,7 @@ int test_keys()
 
     //Bob derives a secret key and creates a response
     crypto_kem_enc(sendb, key_b, pk);
-  
+
     //Alice uses Bobs response to get her secret key
     crypto_kem_dec(key_a, sendb, sk_a);
 
@@ -52,10 +56,10 @@ int test_invalid_sk_a()
     //Replace secret key with random values
     randombytes(sk_a, KYBER_SECRETKEYBYTES);
 
-  
+
     //Alice uses Bobs response to get her secre key
     crypto_kem_dec(key_a, sendb, sk_a);
-    
+
     if(!memcmp(key_a, key_b, KYBER_SYMBYTES))
       printf("ERROR invalid sk_a\n");
   }
@@ -85,7 +89,7 @@ int test_invalid_ciphertext()
 
     //Change some byte in the ciphertext (i.e., encapsulated key)
     sendb[pos % KYBER_CIPHERTEXTBYTES] ^= 23;
-  
+
     //Alice uses Bobs response to get her secre key
     crypto_kem_dec(key_a, sendb, sk_a);
 
@@ -101,7 +105,7 @@ int main(void)
   test_keys();
   test_invalid_sk_a();
   test_invalid_ciphertext();
-  
+
   printf("KYBER_SECRETKEYBYTES:  %d\n",KYBER_SECRETKEYBYTES);
   printf("KYBER_PUBLICKEYBYTES:  %d\n",KYBER_PUBLICKEYBYTES);
   printf("KYBER_CIPHERTEXTBYTES: %d\n",KYBER_CIPHERTEXTBYTES);
