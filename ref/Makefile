@@ -6,6 +6,7 @@ RM 		    = /bin/rm
 all: test_kyber512 \
 		 test_kyber768 \
 		 test_kyber1024 \
+		 mytest_kyber1024 \
 		 test_kex512 \
 		 test_kex768 \
 		 test_kex1024 \
@@ -17,8 +18,9 @@ all: test_kyber512 \
 		 speed1024 \
      PQCgenKAT_kem \
 
-SOURCES = kem.c poly.c polyvec.c fips202.c reduce.c cbd.c precomp.c ntt.c verify.c indcpa.c kex.c
-HEADERS = params.h poly.h polyvec.h reduce.h cbd.h ntt.h verify.h indcpa.h kex.h
+SOURCES = kem.c poly.c polyvec.c fips202.c reduce.c cbd.c precomp.c ntt.c verify.c indcpa.c kex.c mypke.c
+MYHELPER_SOURCE = mytest/cpucycles.c mytest/speed.c
+HEADERS = params.h poly.h polyvec.h reduce.h cbd.h ntt.h verify.h indcpa.h kex.h mypke.h
 
 test_kyber512: $(SOURCES) $(HEADERS) test_kyber.c randombytes.c randombytes.h
 	$(CC) $(CFLAGS) -DKYBER_K=2 $(SOURCES) randombytes.c test_kyber.c -o test_kyber512
@@ -28,6 +30,9 @@ test_kyber768: $(SOURCES) $(HEADERS) test_kyber.c randombytes.c randombytes.h
 
 test_kyber1024: $(SOURCES) $(HEADERS) test_kyber.c randombytes.c randombytes.h
 	$(CC) $(CFLAGS) -DKYBER_K=4 $(SOURCES) randombytes.c test_kyber.c -o test_kyber1024
+
+mytest_kyber1024: $(SOURCES) $(HEADERS) mytest_kyber.c randombytes.c randombytes.h
+	$(CC) $(CFLAGS) -DKYBER_K=4 $(SOURCES) $(MYHELPER_SOURCE) randombytes.c mytest_kyber.c -o mytest_kyber1024
 
 test_kex512: $(SOURCES) $(HEADERS) test_kex.c randombytes.c randombytes.h
 	$(CC) $(CFLAGS) -DKYBER_K=2 $(SOURCES) randombytes.c test_kex.c -o test_kex512
@@ -67,6 +72,7 @@ clean:
 	-$(RM) -r test_kyber512
 	-$(RM) -r test_kyber768
 	-$(RM) -r test_kyber1024
+	-$(RM) -r mytest_kyber1024
 	-$(RM) -r test_kex512
 	-$(RM) -r test_kex768
 	-$(RM) -r test_kex1024
