@@ -5,10 +5,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "mytest/cpucycles.h"
+#include "mytest/speed.h"
 
 #define NTESTS 10
-#define CRYPTO_MSG_LENGTH KYBER_SYMBYTES
-#define CRYPTO_CIPHER_MSG_LENGTH KYBER_CIPHERTEXTBYTES
+#define SCHEME_NAME "kyber1024"
+
+#define MYCRYPTO_SK_LENGTH KYBER_INDCPA_SECRETKEYBYTES
+#define MYCRYPTO_PK_LENGTH KYBER_INDCPA_PUBLICKEYBYTES
+#define MYCRYPTO_MSG_LENGTH KYBER_SYMBYTES
+#define MYCRYPTO_CIPHER_MSG_LENGTH KYBER_CIPHERTEXTBYTES
 
 #define TEST_LOOPS NTESTS
 
@@ -26,53 +32,53 @@
 "        \"service_id\": 5,\n" \
 "}"
 
+unsigned long long timing_overhead;
 
 int mycryptotest_easy_pke()
 {
-    unsigned char m[KYBER_SYMBYTES] = {0};
-    unsigned char m_[KYBER_SYMBYTES] = {0};
-    unsigned char pk[KYBER_INDCPA_PUBLICKEYBYTES] = {0};
-    unsigned char ct[KYBER_CIPHERTEXTBYTES] = {0};
-    unsigned char sk[KYBER_INDCPA_SECRETKEYBYTES] = {0};
+    unsigned char m[MYCRYPTO_MSG_LENGTH] = {0};
+    unsigned char m_[MYCRYPTO_MSG_LENGTH] = {0};
+    unsigned char pk[MYCRYPTO_PK_LENGTH] = {0};
+    unsigned char ct[MYCRYPTO_CIPHER_MSG_LENGTH] = {0};
+    unsigned char sk[MYCRYPTO_SK_LENGTH] = {0};
     unsigned int i = 0;
     bool status = true;
 
-    printf("\n\nTESTING EASY KYBER PUBLIC KEY ENCRYPTION\n");
+    printf("\n\nTESTING EASY KYBER PUBLIC KEY ENCRYPTION %s\n", SCHEME_NAME);
     printf("--------------------------------------------------------------------------------------------------------\n\n");
 
-    snprintf((char*)m, KYBER_SYMBYTES, "123321");
+    snprintf((char*)m, MYCRYPTO_MSG_LENGTH, "123321");
     for (i = 0; i < NTESTS; i++) {
         mypke_keypair(pk, sk);
         mypke_enc(ct, m, pk);
         mypke_dec(m_, ct, sk);
 
-        if (memcmp(m, m_, KYBER_SYMBYTES)) {
+        if (memcmp(m, m_, MYCRYPTO_MSG_LENGTH)) {
             printf("ERROR keys\n");
             status = false;
             break;
         }
     }
 
-    if (status == true) {
-        printf("  PKE tests .................................................... PASSED");
-    } else {
-        printf("  PKE tests ... FAILED");
+    if (status != true) {
+        printf("  PKE tests ... FAILED\n");
+        return status;
     }
-    printf("\n");
 
+    printf("  PKE tests .................................................... PASSED\n");
     return status;
 }
 
 int mycryptotest_pke()
 {
     unsigned int i = 0;
-    unsigned char sk[KYBER_INDCPA_SECRETKEYBYTES] = {0};
-    unsigned char pk[KYBER_INDCPA_PUBLICKEYBYTES] = {0};
+    unsigned char sk[MYCRYPTO_SK_LENGTH] = {0};
+    unsigned char pk[MYCRYPTO_PK_LENGTH] = {0};
     bool status = true;
 
-    unsigned int encTimes = (strlen(TEST_JSON_PLAINTEXT) + 1) / CRYPTO_MSG_LENGTH + 1;
-    unsigned int myMsgLen = encTimes * CRYPTO_MSG_LENGTH;
-    unsigned int myCtLen = encTimes * CRYPTO_CIPHER_MSG_LENGTH;
+    unsigned int encTimes = (strlen(TEST_JSON_PLAINTEXT) + 1) / MYCRYPTO_MSG_LENGTH + 1;
+    unsigned int myMsgLen = encTimes * MYCRYPTO_MSG_LENGTH;
+    unsigned int myCtLen = encTimes * MYCRYPTO_CIPHER_MSG_LENGTH;
     unsigned int encdecIdx = 0;
 
     unsigned char* myMsg = NULL;
@@ -83,10 +89,10 @@ int mycryptotest_pke()
         NULL == (myMsg_ = (unsigned char*)calloc(myMsgLen, sizeof(unsigned char))) ||
         NULL == (myCt = (unsigned char*)calloc(myCtLen, sizeof(unsigned char)))) {
         printf("Cannot get the memory\n");
-        return -1;
+        return false;
     }
 
-    printf("\n\nTESTING KYBER PUBLIC KEY ENCRYPTION\n");
+    printf("\n\nTESTING KYBER PUBLIC KEY ENCRYPTION %s\n", SCHEME_NAME);
     printf("--------------------------------------------------------------------------------------------------------\n\n");
 
     for (i = 0; i < TEST_LOOPS; i++)
@@ -105,13 +111,13 @@ int mycryptotest_pke()
         printf("start encrypt\n");
 #endif
         for (encdecIdx = 0; encdecIdx < encTimes; encdecIdx++) {
-            mypke_enc(myCt + encdecIdx * CRYPTO_CIPHER_MSG_LENGTH, myMsg + encdecIdx * CRYPTO_MSG_LENGTH, pk);
+            mypke_enc(myCt + encdecIdx * MYCRYPTO_CIPHER_MSG_LENGTH, myMsg + encdecIdx * MYCRYPTO_MSG_LENGTH, pk);
         }
 #ifdef JAYPAN_DEBUG
         printf("after encrypt %s\n", (char*)myMsg);
 #endif
         for (encdecIdx = 0; encdecIdx < encTimes; encdecIdx++) {
-            mypke_dec(myMsg_ + encdecIdx * CRYPTO_MSG_LENGTH, myCt + encdecIdx * CRYPTO_CIPHER_MSG_LENGTH, sk);
+            mypke_dec(myMsg_ + encdecIdx * MYCRYPTO_MSG_LENGTH, myCt + encdecIdx * MYCRYPTO_CIPHER_MSG_LENGTH, sk);
         }
 #ifdef JAYPAN_DEBUG
         printf("after decrypt %s\n", (char*)myMsg_);
@@ -133,16 +139,101 @@ int mycryptotest_pke()
         free(myCt);
     }
 
-    if (status == true) {
-        printf("  PKE tests .................................................... PASSED");
-    } else {
-        printf("  PKE tests ... FAILED");
+    if (status != true) {
+        printf("  PKE tests ... FAILED\n");
+        return status;
     }
-    printf("\n");
 
+    printf("  PKE tests .................................................... PASSED\n");
     return status;
 }
 
+int mycryptorun_pke()
+{
+    unsigned int i;
+    unsigned char sk[MYCRYPTO_SK_LENGTH] = {0};
+    unsigned char pk[MYCRYPTO_PK_LENGTH] = {0};
+    bool status = true;
+
+    unsigned int encTimes = (strlen(TEST_JSON_PLAINTEXT) + 1) / MYCRYPTO_MSG_LENGTH + 1;
+    unsigned int myMsgLen = encTimes * MYCRYPTO_MSG_LENGTH;
+    unsigned int myCtLen = encTimes * MYCRYPTO_CIPHER_MSG_LENGTH;
+    unsigned int encdecIdx = 0;
+
+    unsigned char* myMsg = NULL;
+    unsigned char* myMsg_ = NULL;
+    unsigned char* myCt = NULL;
+
+    unsigned long long tkeygen[TEST_LOOPS], tsign[TEST_LOOPS], tverify[TEST_LOOPS];
+    timing_overhead = cpucycles_overhead();
+
+    if (NULL == (myMsg = (unsigned char*)calloc(myMsgLen, sizeof(unsigned char))) ||
+        NULL == (myMsg_ = (unsigned char*)calloc(myMsgLen, sizeof(unsigned char))) ||
+        NULL == (myCt = (unsigned char*)calloc(myCtLen, sizeof(unsigned char)))) {
+        printf("Cannot get the memory\n");
+        return false;
+    }
+
+    printf("\n\nTESTING ISOGENY-BASED PUBLIC KEY ENCRYPTION %s\n", SCHEME_NAME);
+    printf("--------------------------------------------------------------------------------------------------------\n\n");
+
+    for (i = 0; i < TEST_LOOPS; i++)
+    {
+        memset(myMsg, 0, myMsgLen);
+        memset(myMsg_, 0, myMsgLen);
+        memset(myCt, 0, myCtLen);
+
+        snprintf((char*)myMsg, myMsgLen, TEST_JSON_PLAINTEXT);
+
+        printf("start genkey\n");
+        tkeygen[i] = cpucycles_start();
+        mypke_keypair(pk, sk);
+        tkeygen[i] = cpucycles_stop() - tkeygen[i] - timing_overhead;
+
+        printf("start encrypt\n");
+        tsign[i] = cpucycles_start();
+        for (encdecIdx = 0; encdecIdx < encTimes; encdecIdx++) {
+            mypke_enc(myCt + encdecIdx * MYCRYPTO_CIPHER_MSG_LENGTH, myMsg + encdecIdx * MYCRYPTO_MSG_LENGTH, pk);
+        }
+        tsign[i] = cpucycles_stop() - tsign[i] - timing_overhead;
+
+        printf("start decrypt\n");
+        tverify[i] = cpucycles_start();
+        for (encdecIdx = 0; encdecIdx < encTimes; encdecIdx++) {
+            mypke_dec(myMsg_ + encdecIdx * MYCRYPTO_MSG_LENGTH, myCt + encdecIdx * MYCRYPTO_CIPHER_MSG_LENGTH, sk);
+        }
+        tverify[i] = cpucycles_stop() - tverify[i] - timing_overhead;
+
+        if (memcmp(myMsg, myMsg_, myMsgLen) != 0) {
+            status = false;
+            break;
+        }
+    }
+
+    if (myMsg) {
+        free(myMsg);
+    }
+    if (myMsg_) {
+        free(myMsg_);
+    }
+    if (myCt) {
+        free(myCt);
+    }
+
+    if (status != true) {
+        printf("  PKE tests ... FAILED\n");
+        return status;
+    }
+
+    printf("  PKE tests .................................................... PASSED\n");
+
+    print_results("keygen:", tkeygen, TEST_LOOPS);
+    print_results("sign: ", tsign, TEST_LOOPS);
+    print_results("verify: ", tverify, TEST_LOOPS);
+    printf("average length: %u\n", myCtLen);
+
+    return status;
+}
 
 int main(void)
 {
@@ -154,6 +245,12 @@ int main(void)
     }
 
     status = mycryptotest_pke();
+    if (status != true) {
+        printf("\n\n     Error detected: KEM_ERROR_PKE \n\n");
+        return -1;
+    }
+
+    status = mycryptorun_pke();
     if (status != true) {
         printf("\n\n     Error detected: KEM_ERROR_PKE \n\n");
         return -1;
