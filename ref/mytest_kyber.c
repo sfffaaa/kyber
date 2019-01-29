@@ -8,7 +8,7 @@
 #include "mytest/cpucycles.h"
 #include "mytest/speed.h"
 
-#define NTESTS 10
+#define NTESTS 50
 #define SCHEME_NAME "kyber1024"
 
 #define MYCRYPTO_SK_LENGTH KYBER_INDCPA_SECRETKEYBYTES
@@ -48,7 +48,7 @@ int mycryptotest_easy_pke()
     printf("--------------------------------------------------------------------------------------------------------\n\n");
 
     snprintf((char*)m, MYCRYPTO_MSG_LENGTH, "123321");
-    for (i = 0; i < NTESTS; i++) {
+    for (i = 0; i < TEST_LOOPS; i++) {
         mypke_keypair(pk, sk);
         mypke_enc(ct, m, pk);
         mypke_dec(m_, ct, sk);

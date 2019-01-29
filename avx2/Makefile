@@ -1,5 +1,5 @@
 CC 		    = /usr/bin/cc
-CFLAGS    = -g -Wall -Wextra -O3 -fomit-frame-pointer -march=native -fPIC
+CFLAGS    = -Wall -Wextra -O3 -fomit-frame-pointer -march=native -fPIC
 NISTFLAGS = -O3 -fomit-frame-pointer -march=native -fPIC
 RM 		    = /bin/rm
 
